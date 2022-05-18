@@ -1,0 +1,15 @@
+.vs/**
+x64/**
+Debug/**
+Release/**
+lavaResawndz/x64/**
+lavaResawndz/Debug/**
+lavaResawndz/Release/**
+lavaResawndz/Junk/**
+lavaResawndz/filedump/**
+lavaResawndz/*.sawnd
+lavaResawndz/*.brsar
+lavaResawndz/*.bak
+lavaResawndz/*.dat
+lavaResawndz/*.txt
+!**/.gitkeep
