@@ -8,6 +8,15 @@ const std::string targetBrsarName = "smashbros_sound";
 #define ENABLE_SAWND_IMPORT_TEST true
 const unsigned long sawndTestsTargetGroupID = 0x11;
 const std::string sawndTestsFilename = "sawnd.sawnd";
+
+const std::string brsarDefaultFilename = targetBrsarName + ".brsar";
+const std::string sawndDefaultFilename = "sawnd.sawnd";
+const std::string nullArgumentString = "-";
+bool isNullArg(const char* argIn)
+{
+	return (argIn != nullptr) ? (strcmp(argIn, nullArgumentString.c_str()) == 0) : 0;
+}
+
 int testmain()
 {
 	lava::brawl::brsar testBrsar;
@@ -24,7 +33,6 @@ int testmain()
 
 int main(int argc, char** argv)
 {
-	setvbuf(stdout, NULL, _IONBF, 0);
 	srand(time(0));
 	std::cout << "Resawndz " << lava::brawl::resawndzVersion << "\n";
 	std::cout << "Written by QuickLava\n";
@@ -33,41 +41,63 @@ int main(int argc, char** argv)
 	std::cout << " - Soopercool101, as well as Kryal, BlackJax96, and libertyernie (BrawlLib, BrawlBox, BrawlCrate)\n\n";
 	try
 	{
-		if (argc == 1)
+		if (argc >= 2)
 		{
-			std::cerr << "Please open the SuperSawndz GUI, rather than this program.\n";
-			return 0;
-		}
-		else
-		{
-			if (strcmp("sawndcreate", argv[1]) == 0)
+			if (strcmp("sawndcreate", argv[1]) == 0 && argc >= 3)
 			{
 				lava::brawl::brsar sourceBrsar;
 				std::string activeBrsarName = targetBrsarName + ".brsar";
-				if (argc == 4)
+				std::string targetFileName = sawndDefaultFilename;
+				if (argc >= 4 && !isNullArg(argv[3]))
 				{ 
 					activeBrsarName = argv[3];
 				}
-				sourceBrsar.init(activeBrsarName);
-				lava::brawl::exportSawnd(sourceBrsar, std::stoi(argv[2]), "sawnd.sawnd");
+				if (argc >= 5 && !isNullArg(argv[4]))
+				{
+					targetFileName = argv[4];
+				}
+				if (sourceBrsar.init(activeBrsarName))
+				{
+					lava::brawl::exportSawnd(sourceBrsar, std::stoi(argv[2]), targetFileName);
+				}
+				else
+				{
+					std::cerr << "[ERROR] Failed to initialize .brsar struct! Operation aborted!\n";
+				}
 				return 0;
 			}
-			if (strcmp("sawnd", argv[1]) == 0)
+			if (strcmp("sawnd", argv[1]) == 0 && argc >= 2)
 			{
 				lava::brawl::brsar sourceBrsar;
 				std::string activeBrsarName = targetBrsarName + ".brsar";
-				if (argc == 3)
+				std::string targetFileName = sawndDefaultFilename;
+				if (argc >= 3 && !isNullArg(argv[2]))
 				{
 					activeBrsarName = argv[2];
 				}
-				sourceBrsar.init(activeBrsarName);
-				lava::brawl::importSawnd(sourceBrsar, "sawnd.sawnd");
-				sourceBrsar.exportContents(activeBrsarName);
+				if (argc >= 4 && !isNullArg(argv[3]))
+				{
+					targetFileName = argv[3];
+				}
+				if (sourceBrsar.init(activeBrsarName))
+				{
+					lava::brawl::importSawnd(sourceBrsar, targetFileName);
+					sourceBrsar.exportContents(activeBrsarName);
+				}
+				else
+				{
+					std::cerr << "[ERROR] Failed to initialize .brsar struct! Operation aborted!\n";
+				}
 				return 0;
 			}
-			std::cerr << "Incorrect command.\n";
-			return 0;
 		}
+		std::cout << "Invalid argument set supplied! Please provide one of the following sets of arguments!\n";
+		std::cout << "To export a .sawnd:\n";
+		std::cout << "\tsawndcreate {GROUP_ID} {BRSAR_PATH, optional} {OUTPUT_PATH, optional}\n";
+		std::cout << "To import a .sawnd:\n";
+		std::cout << "\tsawnd {BRSAR_PATH, optional} {INPUT_PATH, optional}\n";
+		std::cout << "Note: Default BRSAR_PATH is \"" << brsarDefaultFilename << "\", default IN/OUTPUT_PATH is \"" << sawndDefaultFilename << "\".\n";
+		std::cout << "Note: To explicitly use one of the above defaults, specify \"" << nullArgumentString << "\" for that argument.\n";
 	}
 	catch (std::exception e)
 	{
