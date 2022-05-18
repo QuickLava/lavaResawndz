@@ -2,10 +2,10 @@
 
 const std::string targetBrsarName = "smashbros_sound";
 
+// Test which exports a sawnd file of the specified name for the specified group.
 #define ENABLE_SAWND_EXPORT_TEST true
 // Test which imports a sawnd file, then exports the .brsar.
 #define ENABLE_SAWND_IMPORT_TEST true
-// Test which summarizes and dumps every file in the .brsar, grouped by group.
 const unsigned long sawndTestsTargetGroupID = 0x11;
 const std::string sawndTestsFilename = "sawnd.sawnd";
 int testmain()
