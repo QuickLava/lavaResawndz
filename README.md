@@ -23,5 +23,5 @@ This program additionally implements further error checking elsewhere in the imp
 For instance, it will check to ensure that the files contained in a given .sawnd file are actually contained in the group it represents, with allowances made to help ensure out-of-region versions of the same file import correctly.
 Beyond that, the program should produce more meaningful error messages than the previous iteration did, which should help inform users' investiagtions into how to fix problems they're having.
 
-## Other Notes
+## Troubleshooting
 If anything goes wrong while using this program, feel free to DM me either on Twitter @QuickLava or on Discord @ QuickLava#6688 for assistance!
