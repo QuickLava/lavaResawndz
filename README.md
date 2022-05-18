@@ -1,6 +1,8 @@
 # lavaResawndz
 A full reimplementation of Jaklub's Sawndz program, built on top of [lavaBRSARLib](https://github.com/QuickLava/lavaBRSARLib), primarily for use with SuperSawndz.
 
+*Note: In order to use this program with SuperSawndz, download the latest release, rename the provided executable to "sawndz.exe", and place it into the same folder as SuperSawndz.*
+
 ## Fixed Issues
 This implementation of the program seeks to address two primary issues with the original Sawndz program:
 1. Previously, produced .sawnd files would sometimes wind up stuck together, which could result in substantially larger than expected files. This could often be circumvented by exporting the .sawnd file multiple times, but failing to do so would leave users with improperly-formed .sawnd files, which leads directly to the second issue.
@@ -18,7 +20,7 @@ Here, AAAA is a random identifier number for the split, BB denotes the position 
 
 ## Other Changes
 This program additionally implements further error checking elsewhere in the import process.
-For instance, it will check to ensure that the files contained in a given .sawnd file are actually contained in the group it represents, with allowances made to ensure out-of-region versions of the same file import correctly.
+For instance, it will check to ensure that the files contained in a given .sawnd file are actually contained in the group it represents, with allowances made to help ensure out-of-region versions of the same file import correctly.
 Beyond that, the program should produce more meaningful error messages than the previous iteration did, which should help inform users' investiagtions into how to fix problems they're having.
 
 ## Other Notes
