@@ -282,7 +282,7 @@ namespace lava
 		{
 			bool result = 0;
 
-			if (bodyIn.populated())
+			if (bodyIn.populated() && bodyIn.getLong(addressIn) == brsarHexTags::bht_SYMB)
 			{
 				result = 1;
 				address = addressIn;
@@ -1003,7 +1003,7 @@ namespace lava
 		{
 			bool result = 0;
 
-			if (bodyIn.populated())
+			if (bodyIn.populated() && bodyIn.getLong(addressIn) == brsarHexTags::bht_INFO)
 			{
 				result = 1;
 				address = addressIn;
@@ -1947,10 +1947,9 @@ namespace lava
 		{
 			bool result = 0;
 
-			if (bodyIn.populated())
+			if (bodyIn.populated() && bodyIn.getLong(addressIn) == brsarHexTags::bht_FILE)
 			{
 				address = addressIn;
-
 				length = bodyIn.getLong(address + 0x04);
 				brsarInfoGroupHeader* currHeader = nullptr;
 				brsarInfoGroupEntry* currEntry = nullptr;
@@ -1972,7 +1971,6 @@ namespace lava
 						fileIDToIndex[currEntry->fileID].push_back(fileContents.size() - 1);
 					}
 				}
-
 				result = 1;
 			}
 
@@ -2026,20 +2024,23 @@ namespace lava
 			fileIn.open(filePathIn, std::ios_base::in | std::ios_base::binary);
 			if (fileIn.is_open())
 			{
-				result = 1;
 				std::cout << "Parsing \"" << filePathIn << "\"...\n";
 				byteArray contents(fileIn);
 				fileIn.close();
-				std::size_t cursor = 0x04;
-				byteOrderMarker = contents.getShort(cursor, &cursor);
-				version = contents.getShort(cursor, &cursor);
-				length = contents.getLong(cursor, &cursor);
-				headerLength = contents.getShort(cursor, &cursor);
-				sectionCount = contents.getShort(cursor, &cursor);
+				if (contents.populated() && contents.getLong(0x00) == brsarHexTags::bht_RSAR)
+				{
+					std::size_t cursor = 0x04;
+					result = 1;
+					byteOrderMarker = contents.getShort(cursor, &cursor);
+					version = contents.getShort(cursor, &cursor);
+					length = contents.getLong(cursor, &cursor);
+					headerLength = contents.getShort(cursor, &cursor);
+					sectionCount = contents.getShort(cursor, &cursor);
 
-				result &= symbSection.populate(contents, contents.getLong(0x10));
-				result &= infoSection.populate(contents, contents.getLong(0x18));
-				result &= fileSection.populate(contents, contents.getLong(0x20), infoSection);
+					result &= symbSection.populate(contents, contents.getLong(0x10));
+					result &= infoSection.populate(contents, contents.getLong(0x18));
+					result &= fileSection.populate(contents, contents.getLong(0x20), infoSection);
+				}
 			}
 			return result;
 		}
