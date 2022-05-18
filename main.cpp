@@ -2,6 +2,26 @@
 
 const std::string targetBrsarName = "smashbros_sound";
 
+#define ENABLE_SAWND_EXPORT_TEST true
+// Test which imports a sawnd file, then exports the .brsar.
+#define ENABLE_SAWND_IMPORT_TEST true
+// Test which summarizes and dumps every file in the .brsar, grouped by group.
+const unsigned long sawndTestsTargetGroupID = 0x11;
+const std::string sawndTestsFilename = "sawnd.sawnd";
+int testmain()
+{
+	lava::brawl::brsar testBrsar;
+	testBrsar.init(targetBrsarName + ".brsar");
+#if ENABLE_SAWND_EXPORT_TEST
+	lava::brawl::exportSawnd(testBrsar, sawndTestsTargetGroupID, sawndTestsFilename);
+#endif
+#if ENABLE_SAWND_IMPORT_TEST
+	lava::brawl::importSawnd(testBrsar, sawndTestsFilename);
+	testBrsar.exportContents(targetBrsarName + "_sawndimport.brsar");
+#endif
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
 	setvbuf(stdout, NULL, _IONBF, 0);
