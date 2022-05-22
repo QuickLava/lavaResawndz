@@ -244,6 +244,7 @@ namespace lava
 											std::cout << "\tOverwriting File (ID: " << lava::numToDecStringWithPadding(currEntry->fileID, 0x03) << " / 0x" << lava::numToHexStringWithPadding(currEntry->fileID, 0x03) << ")...";
 											if (sourceBrsar.overwriteFile(currEntry->headerContent, currEntry->dataContent, currEntry->fileID))
 											{
+												result = 1;
 												std::cout << " Success!\n";
 											}
 											else
@@ -261,6 +262,7 @@ namespace lava
 												std::cout << "\tOverwriting File (ID: " << lava::numToDecStringWithPadding(synonymousID, 0x03) << " / 0x" << lava::numToHexStringWithPadding(synonymousID, 0x03) << ")...";
 												if (sourceBrsar.overwriteFile(currEntry->headerContent, currEntry->dataContent, synonymousID))
 												{
+													result = 1;
 													std::cout << " Success!\n";
 												}
 												else
@@ -330,6 +332,87 @@ namespace lava
 			{
 				std::cout << "[ERROR] Unable to open \"" << sourceFilePath << "\" for import!\n";
 			}
+
+			return result;
+		}
+		bool importWav(brsar& sourceBrsar, std::string sourceSPDPath, std::string sourceSPTPath, unsigned long groupID, unsigned long fileID, unsigned long waveID, signed long frequency, signed long basewave, signed long loop)
+		{
+			bool result = 0;
+
+			std::ifstream spdIn(sourceSPDPath, std::ios_base::in | std::ios_base::binary);
+			if (spdIn.is_open())
+			{
+				spt sptContents;
+				if (sptContents.populate(sourceSPTPath, 0x00))
+				{
+					const brsarInfoGroupHeader* targetGroupHeader = sourceBrsar.infoSection.getGroupWithID(groupID);
+					std::cout << "Importing sound over:\n";
+					std::cout << "\tGroup #" << lava::numToDecStringWithPadding(groupID, 0x03) << " / 0x" << lava::numToHexStringWithPadding(groupID, 0x03) << "\n";
+					std::cout << "\tFile #" << lava::numToDecStringWithPadding(fileID, 0x03) << " / 0x" << lava::numToHexStringWithPadding(fileID, 0x03) << "\n";
+					std::cout << "\tWave #" << lava::numToDecStringWithPadding(waveID, 0x03) << " / 0x" << lava::numToHexStringWithPadding(waveID, 0x03) << "\n";
+					if (targetGroupHeader != nullptr)
+					{
+						if (targetGroupHeader->usesFileID(fileID))
+						{
+							const brsarFileFileContents* contentsPtr = sourceBrsar.fileSection.getFileContentsPointer(fileID, groupID);
+							rwsd contentsRWSD;
+							if (contentsRWSD.populate(*contentsPtr))
+							{
+								result = 1;
+								waveInfo* currWave = &contentsRWSD.waveSection.entries[waveID];
+								std::vector<unsigned char> spdDataIn = streamContentsToVec(spdIn);
+								spdIn.read((char*)spdDataIn.data(), spdDataIn.size());
+								result &= contentsRWSD.overwriteWaveRawData(waveID, spdDataIn);
+								currWave->looped = loop;
+								currWave->sampleRate24 = frequency >> 16;
+								currWave->sampleRate = unsigned short(frequency);
+								for (unsigned long i = 0; i < currWave->channels; i++)
+								{
+									adpcmInfo* currADPCM = &currWave->adpcmInfoEntries[i];
+									currADPCM->coefficients = sptContents.coefficients;
+									currADPCM->ps = sptContents.ps;
+									currADPCM->lps = sptContents.ps;
+								}
+								result &= sourceBrsar.overwriteFile(contentsRWSD.fileSectionToVec(), contentsRWSD.rawDataSectionToVec(), fileID);
+								if (result)
+								{
+									std::cout << "Success!\n";
+								}
+								else
+								{
+									std::cout << "[ERROR] Unable to perform import!\n";
+									std::cout << "Unable to overwrite File in BRSAR!\n";
+								}
+							}
+							else
+							{
+								std::cout << "[ERROR] Unable to perform import!\n";
+								std::cout << "Unable to parse the targeted the target File!\n";
+							}
+						}
+						else
+						{
+							std::cout << "[ERROR] Unable to perform import!\n";
+							std::cout << "The targeted Group doesn't use a File with the specified ID!\n";
+						}
+					}
+					else
+					{
+						std::cout << "[ERROR] Unable to perform import!\n";
+						std::cout << "The targeted Group (" << lava::numToDecStringWithPadding(groupID, 0x03) << " / 0x" << lava::numToHexStringWithPadding(groupID, 0x03) << ") couldn't be found in this .brsar!\n";
+					}
+				}
+				else
+				{
+					std::cout << "[ERROR] Unable to parse \"" << sourceSPTPath << "\" for import!\n";
+				}
+			}
+			else
+			{
+				std::cout << "[ERROR] Unable to open \"" << sourceSPDPath << "\" for import!\n";
+			}
+
+			
 
 			return result;
 		}

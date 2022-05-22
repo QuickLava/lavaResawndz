@@ -2,6 +2,9 @@
 
 const std::string targetBrsarName = "smashbros_sound";
 
+// Switches the Resawndz .brsar export to output to its own file, instead of overwriting the original.
+#define ENABLE_BRSAR_EXPORT_REROUTE false
+const std::string resawndzRerouteSuffix = "_edit.brsar";
 // Test which exports a sawnd file of the specified name for the specified group.
 #define ENABLE_SAWND_EXPORT_TEST true
 // Test which imports a sawnd file, then exports the .brsar.
@@ -9,13 +12,29 @@ const std::string targetBrsarName = "smashbros_sound";
 const unsigned long sawndTestsTargetGroupID = 0x11;
 const std::string sawndTestsFilename = "sawnd.sawnd";
 
+// Default Argument Constants
 const std::string brsarDefaultFilename = targetBrsarName + ".brsar";
 const std::string sawndDefaultFilename = "sawnd.sawnd";
+const std::string spdDefaultFilename = "sawnd.spd";
+const std::string sptDefaultFilename = "sawnd.spt";
 const std::string nullArgumentString = "-";
 bool isNullArg(const char* argIn)
 {
 	return (argIn != nullptr) ? (strcmp(argIn, nullArgumentString.c_str()) == 0) : 0;
 }
+
+// Export Func
+bool exportBRSAR(lava::brawl::brsar& brsarIn, std::string pathOut)
+{
+	bool result = 0;
+#if ENABLE_BRSAR_EXPORT_REROUTE == false
+	result = brsarIn.exportContents(pathOut);
+#else
+	result = brsarIn.exportContents(lava::pruneFileExtension(pathOut) + resawndzRerouteSuffix);
+#endif
+	return result;
+}
+
 
 int testmain()
 {
@@ -66,7 +85,7 @@ int main(int argc, char** argv)
 				}
 				return 0;
 			}
-			if (strcmp("sawnd", argv[1]) == 0 && argc >= 2)
+			else if (strcmp("sawnd", argv[1]) == 0 && argc >= 2)
 			{
 				lava::brawl::brsar sourceBrsar;
 				std::string activeBrsarName = targetBrsarName + ".brsar";
@@ -81,8 +100,47 @@ int main(int argc, char** argv)
 				}
 				if (sourceBrsar.init(activeBrsarName))
 				{
-					lava::brawl::importSawnd(sourceBrsar, targetFileName);
-					sourceBrsar.exportContents(activeBrsarName);
+					if (lava::brawl::importSawnd(sourceBrsar, targetFileName))
+					{
+						exportBRSAR(sourceBrsar, activeBrsarName);
+					}
+				}
+				else
+				{
+					std::cerr << "[ERROR] Failed to initialize .brsar struct! Operation aborted!\n";
+				}
+				return 0;
+			}
+			else if (strcmp("insert", argv[1]) == 0 && argc >= 8)
+			{
+				lava::brawl::brsar sourceBrsar;
+				std::string activeBrsarName = targetBrsarName + ".brsar";
+				std::string sourceSPDFile = spdDefaultFilename;
+				std::string sourceSPTFile = sptDefaultFilename;
+				if (argc >= 8 && !isNullArg(argv[7]))
+				{
+					activeBrsarName = argv[7];
+				}
+				if (argc >= 9 && !isNullArg(argv[8]))
+				{
+					sourceSPDFile = argv[8];
+				}
+				if (argc >= 10 && !isNullArg(argv[9]))
+				{
+					sourceSPTFile = argv[9];
+				}
+				unsigned long targetGroupID = std::stoi(argv[2]);
+				unsigned long targetFileID = std::stoi(argv[3]);
+				unsigned long targetWaveID = std::stoi(argv[4]);
+				unsigned long frequency = std::stoi(argv[5]);
+				unsigned long basewave = -1;
+				unsigned long loop = std::stoi(argv[6]);
+				if (sourceBrsar.init(activeBrsarName))
+				{
+					if (lava::brawl::importWav(sourceBrsar, sourceSPDFile, sourceSPTFile, targetGroupID, targetFileID, targetWaveID, frequency, basewave, loop))
+					{
+						exportBRSAR(sourceBrsar, activeBrsarName);
+					}
 				}
 				else
 				{
@@ -91,12 +149,20 @@ int main(int argc, char** argv)
 				return 0;
 			}
 		}
-		std::cout << "Invalid argument set supplied! Please provide one of the following sets of arguments!\n";
+		std::cout << "Invalid operation argument set supplied:\n";
+		for (unsigned long i = 0; i < argc; i++)
+		{
+			std::cout << "\tArgv[" << i << "]: " << argv[i] << "\n";
+		}
+		std::cout << "Please provide one of the following sets of arguments!\n";
 		std::cout << "To export a .sawnd:\n";
-		std::cout << "\tsawndcreate {GROUP_ID} {BRSAR_PATH, optional} {OUTPUT_PATH, optional}\n";
+		std::cout << "\tsawndcreate {GROUP_ID} {BRSAR_PATH, optional} {OUTPUT_PATH, opt}\n";
 		std::cout << "To import a .sawnd:\n";
 		std::cout << "\tsawnd {BRSAR_PATH, optional} {INPUT_PATH, optional}\n";
+		std::cout << "To import a .spd, .spt file pair (generated with sndconv.exe):\n";
+		std::cout << "\tinsert {GROUP_ID} {FILE_ID} {WAVE_ID} {FREQUENCY} {LOOP} {BRSAR_PATH, optional} {SPD_PATH, opt} {SPT_PATH, opt}\n";
 		std::cout << "Note: Default BRSAR_PATH is \"" << brsarDefaultFilename << "\", default IN/OUTPUT_PATH is \"" << sawndDefaultFilename << "\".\n";
+		std::cout << "Note: Default SPD_PATH is \"" << spdDefaultFilename << "\", default SPT_PATH is \"" << sptDefaultFilename << "\".\n";
 		std::cout << "Note: To explicitly use one of the above defaults, specify \"" << nullArgumentString << "\" for that argument.\n";
 	}
 	catch (std::exception e)
