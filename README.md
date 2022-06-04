@@ -1,7 +1,7 @@
 # lavaResawndz
 A full reimplementation of Jaklub's Sawndz program, built on top of [lavaBRSARLib](https://github.com/QuickLava/lavaBRSARLib), primarily for use with SuperSawndz.
 
-*Note: In order to use this program with SuperSawndz, download the latest release, rename the provided executable to "sawndz.exe", and place it into the same folder as the SuperSawndz executable.*
+*Note: In order to use this program with SuperSawndz, download the latest release, rename the provided "lavaResawndz.exe" to "sawndz.exe", then place it and the rest of the .zip's contents into the same folder as the SuperSawndz executable.*
 
 ## Fixed Issues
 This implementation of the program seeks to address two primary issues with the original Sawndz program:
