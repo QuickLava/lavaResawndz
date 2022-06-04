@@ -146,6 +146,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="lavaBRSARLib.cpp" />
+    <ClCompile Include="lavaDSP.cpp" />
     <ClCompile Include="lavaResawndz.cpp" />
     <ClCompile Include="lavaUtility.cpp" />
     <ClCompile Include="main.cpp" />
@@ -154,6 +155,7 @@
   <ItemGroup>
     <ClInclude Include="lavaBRSARLib.h" />
     <ClInclude Include="lavaByteArray.h" />
+    <ClInclude Include="lavaDSP.h" />
     <ClInclude Include="lavaResawndz.h" />
     <ClInclude Include="lavaUtility.h" />
     <ClInclude Include="md5.h" />

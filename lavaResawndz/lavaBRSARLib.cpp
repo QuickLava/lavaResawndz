@@ -4,6 +4,15 @@ namespace lava
 {
 	namespace brawl
 	{
+		std::string generateVGAudioWavToDSPCommand(std::string wavFilePath, std::string outputFilePath)
+		{
+			return "\"\"" + VGAudioMainExePath + "\" -c -i:0 \"" + wavFilePath + "\" -o \"" + outputFilePath + "\"\"";
+		}
+		std::string generateVGAudioDSPToWavCommand(std::string dspFilePath, std::string outputFilePath)
+		{
+			return "\"\"" + VGAudioMainExePath + "\" -c -i \"" + dspFilePath + "\" -o \"" + outputFilePath + "\"\"";
+		}
+
 		/* Misc. */
 
 		unsigned long validateHexTag(unsigned long tagIn)
@@ -157,123 +166,6 @@ namespace lava
 
 		/*Sound Data Structs*/
 
-		bool channelInfo::populate(const lava::byteArray& bodyIn, unsigned long addressIn)
-		{
-			bool result = 0;
-
-			if (bodyIn.populated() && (addressIn + 0x1C) <= bodyIn.size())
-			{
-				result = 1;
-				address = addressIn;
-
-				std::size_t cursor = addressIn;
-				channelDataOffset = bodyIn.getLong(cursor, &cursor);
-				adpcmInfoOffset = bodyIn.getLong(cursor, &cursor);
-				volFrontLeft = bodyIn.getLong(cursor, &cursor);
-				volFrontRight = bodyIn.getLong(cursor, &cursor);
-				volBackLeft = bodyIn.getLong(cursor, &cursor);
-				volBackRight = bodyIn.getLong(cursor, &cursor);
-				reserved = bodyIn.getLong(cursor, &cursor);
-			}
-
-			return result;
-		}
-		bool channelInfo::exportContents(std::ostream& destinationStream)
-		{
-			bool result = 0;
-			if (destinationStream.good())
-			{
-				lava::writeRawDataToStream(destinationStream, channelDataOffset);
-				lava::writeRawDataToStream(destinationStream, adpcmInfoOffset);
-				lava::writeRawDataToStream(destinationStream, volFrontLeft);
-				lava::writeRawDataToStream(destinationStream, volFrontRight);
-				lava::writeRawDataToStream(destinationStream, volBackLeft);
-				lava::writeRawDataToStream(destinationStream, volBackRight);
-				lava::writeRawDataToStream(destinationStream, reserved);
-				result = destinationStream.good();
-			}
-			return result;
-		}
-
-		bool adpcmInfo::populate(const lava::byteArray& bodyIn, unsigned long addressIn)
-		{
-			bool result = 0;
-
-			if (bodyIn.populated() && (addressIn + 0x30) <= bodyIn.size())
-			{
-				result = 1;
-				address = addressIn;
-
-				std::size_t cursor = addressIn;
-				for (unsigned long i = 0; i < coefficients.size(); i++)
-				{
-					coefficients[i] = bodyIn.getShort(cursor, &cursor);
-				}
-				gain = bodyIn.getShort(cursor, &cursor);
-				ps = bodyIn.getShort(cursor, &cursor);
-				yn1 = bodyIn.getShort(cursor, &cursor);
-				yn2 = bodyIn.getShort(cursor, &cursor);
-				lps = bodyIn.getShort(cursor, &cursor);
-				lyn1 = bodyIn.getShort(cursor, &cursor);
-				lyn2 = bodyIn.getShort(cursor, &cursor);
-				pad = bodyIn.getShort(cursor, &cursor);
-			}
-
-			return result;
-		}
-		bool adpcmInfo::exportContents(std::ostream& destinationStream)
-		{
-			bool result = 0;
-			if (destinationStream.good())
-			{
-				for (std::size_t i = 0; i < coefficients.size(); i++)
-				{
-					lava::writeRawDataToStream(destinationStream, coefficients[i]);
-				}
-				lava::writeRawDataToStream(destinationStream, gain);
-				lava::writeRawDataToStream(destinationStream, ps);
-				lava::writeRawDataToStream(destinationStream, yn1);
-				lava::writeRawDataToStream(destinationStream, yn2);
-				lava::writeRawDataToStream(destinationStream, lps);
-				lava::writeRawDataToStream(destinationStream, lyn1);
-				lava::writeRawDataToStream(destinationStream, lyn2);
-				lava::writeRawDataToStream(destinationStream, pad);
-				result = destinationStream.good();
-			}
-			return result;
-		}
-
-		bool spt::populate(const byteArray& bodyIn, unsigned long addressIn)
-		{
-			bool result = 0;
-
-			if (bodyIn.populated() && (addressIn + 0x48 <= bodyIn.size()))
-			{
-				result = 1;
-				std::size_t cursor = addressIn + 0x20;
-				for (unsigned long i = 0; i < coefficients.size(); i++)
-				{
-					coefficients[i] = bodyIn.getShort(cursor, &cursor);
-				}
-				ps = bodyIn.getShort(0x42);
-			}
-
-			return result;
-		}
-		bool spt::populate(std::string pathIn, unsigned long addressIn)
-		{
-			bool result = 0;
-
-			std::ifstream sptStream(pathIn, std::ios_base::in | std::ios_base::binary);
-			if (sptStream.is_open())
-			{
-				byteArray tempArr(sptStream);
-				result = populate(tempArr, addressIn);
-			}
-
-			return result;
-		}
-
 		bool wavePacket::populate(const lava::byteArray& bodyIn, unsigned long addressIn, unsigned long dataLengthIn, unsigned long paddingLengthIn)
 		{
 			bool result = 0;
@@ -328,6 +220,7 @@ namespace lava
 			channelInfoEntries = sourceInfo.channelInfoEntries;
 			adpcmInfoEntries = sourceInfo.adpcmInfoEntries;
 		}
+
 		bool waveInfo::populate(const lava::byteArray& bodyIn, unsigned long addressIn)
 		{
 			bool result = 0;
@@ -1935,6 +1828,60 @@ namespace lava
 
 			return result;
 		}
+		bool rwsd::overwriteWaveRawDataWithDSP(unsigned long waveSectionIndex, const dsp& dspIn)
+		{
+			bool result = 0;
+
+			if (waveSectionIndex < waveSection.entries.size())
+			{
+				waveInfo* targetWaveInfo = &waveSection.entries[waveSectionIndex];
+				targetWaveInfo->encoding = 2;
+				targetWaveInfo->channels = 1;
+				targetWaveInfo->looped = dspIn.loops;
+				targetWaveInfo->loopStartSample = dspIn.loopStart;
+				targetWaveInfo->nibbles = dspIn.nibbleCount;
+				targetWaveInfo->sampleRate24 = dspIn.sampleRate >> 16;
+				targetWaveInfo->sampleRate = 0x0000FFFF & dspIn.sampleRate;
+				targetWaveInfo->channelInfoTable.resize(1);
+				targetWaveInfo->channelInfoEntries.resize(1);
+				targetWaveInfo->adpcmInfoEntries.resize(1);
+				targetWaveInfo->adpcmInfoEntries.back() = dspIn.soundInfo;
+				result = overwriteWaveRawData(waveSectionIndex, dspIn.body);
+			}
+
+			return result;
+		}
+		bool rwsd::overwriteWaveRawDataWithDSP(unsigned long waveSectionIndex, std::string dspPathIn)
+		{
+			bool result = 0;
+
+			if (std::filesystem::is_regular_file(dspPathIn))
+			{
+				dsp tempDSP;
+				if (tempDSP.populate(dspPathIn, 0x00))
+				{
+					result = overwriteWaveRawDataWithDSP(waveSectionIndex, tempDSP);
+				}
+			}
+
+			return result;
+		}
+		bool rwsd::overwriteWaveRawDataWithWAV(unsigned long waveSectionIndex, std::string wavPathIn)
+		{
+			bool result = 0;
+
+			if (std::filesystem::is_regular_file(wavPathIn))
+			{
+				system(lava::brawl::generateVGAudioWavToDSPCommand(wavPathIn, VGAudioTempConvFilename).c_str());
+				if (std::filesystem::is_regular_file(VGAudioTempConvFilename))
+				{
+					result = overwriteWaveRawDataWithDSP(waveSectionIndex, VGAudioTempConvFilename);
+					std::filesystem::remove(VGAudioTempConvFilename);
+				}
+			}
+
+			return result;
+		}
 
 		bool rwsd::populateWavePacket(const lava::byteArray& bodyIn, unsigned long waveIndex, unsigned long rawDataAddressIn, unsigned long specificDataEndAddressIn)
 		{
@@ -2014,6 +1961,59 @@ namespace lava
 			return result;
 		}
 
+		dsp rwsd::exportWaveRawDataToDSP(unsigned long waveSectionIndex)
+		{
+			dsp result;
+
+			if (waveSectionIndex < waveSection.entries.size())
+			{
+				const waveInfo* targetWaveInfo = &waveSection.entries[waveSectionIndex];
+				result.nibbleCount = targetWaveInfo->nibbles;
+				result.sampleCount = nibblesToSamples(result.nibbleCount);
+				result.sampleRate = unsigned long(targetWaveInfo->sampleRate24) << 16;
+				result.sampleRate |= targetWaveInfo->sampleRate;
+				result.loops = targetWaveInfo->looped;
+				result.loopStart = targetWaveInfo->loopStartSample;
+				if (result.loops)
+				{
+					result.loopEnd = result.sampleCount - 1;
+				}
+				else
+				{
+					result.loopEnd = 0x00;
+				}
+				result.soundInfo = targetWaveInfo->adpcmInfoEntries.back();
+				result.body = targetWaveInfo->packetContents.body;
+				unsigned long desiredLength = nibblesToBytes(result.nibbleCount);
+				if (result.body.size() < desiredLength)
+				{
+					result.body.resize(desiredLength);
+				}
+			}
+
+			return result;
+		}
+		bool rwsd::exportWaveRawDataToWAV(unsigned long waveSectionIndex, std::string wavOutputPath)
+		{
+			bool result = 0;
+
+			dsp conversionDSP = exportWaveRawDataToDSP(waveSectionIndex);
+			if (!conversionDSP.body.empty())
+			{
+				std::ofstream convDSPOut(VGAudioTempConvFilename, std::ios_base::out | std::ios_base::binary);
+				if (convDSPOut.is_open())
+				{
+					if (conversionDSP.exportContents(convDSPOut))
+					{
+						convDSPOut.close();
+						system(lava::brawl::generateVGAudioDSPToWavCommand(VGAudioTempConvFilename, wavOutputPath).c_str());
+					}
+					std::filesystem::remove(VGAudioTempConvFilename);
+				}
+			}
+
+			return result;
+		}
 		bool rwsd::exportFileSection(std::ostream& destinationStream)
 		{
 			bool result = 0;
