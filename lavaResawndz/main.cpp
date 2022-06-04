@@ -15,8 +15,7 @@ const std::string sawndTestsFilename = "sawnd.sawnd";
 // Default Argument Constants
 const std::string brsarDefaultFilename = targetBrsarName + ".brsar";
 const std::string sawndDefaultFilename = "sawnd.sawnd";
-const std::string spdDefaultFilename = "sawnd.spd";
-const std::string sptDefaultFilename = "sawnd.spt";
+const std::string wavDefaultFilename = "sound.wav";
 const std::string nullArgumentString = "-";
 bool isNullArg(const char* argIn)
 {
@@ -68,7 +67,7 @@ int main(int argc, char** argv)
 				std::string activeBrsarName = targetBrsarName + ".brsar";
 				std::string targetFileName = sawndDefaultFilename;
 				if (argc >= 4 && !isNullArg(argv[3]))
-				{ 
+				{
 					activeBrsarName = argv[3];
 				}
 				if (argc >= 5 && !isNullArg(argv[4]))
@@ -115,19 +114,14 @@ int main(int argc, char** argv)
 			{
 				lava::brawl::brsar sourceBrsar;
 				std::string activeBrsarName = targetBrsarName + ".brsar";
-				std::string sourceSPDFile = spdDefaultFilename;
-				std::string sourceSPTFile = sptDefaultFilename;
+				std::string wavPath = wavDefaultFilename;
 				if (argc >= 8 && !isNullArg(argv[7]))
 				{
 					activeBrsarName = argv[7];
 				}
 				if (argc >= 9 && !isNullArg(argv[8]))
 				{
-					sourceSPDFile = argv[8];
-				}
-				if (argc >= 10 && !isNullArg(argv[9]))
-				{
-					sourceSPTFile = argv[9];
+					wavPath = argv[8];
 				}
 				unsigned long targetGroupID = std::stoi(argv[2]);
 				unsigned long targetFileID = std::stoi(argv[3]);
@@ -137,14 +131,33 @@ int main(int argc, char** argv)
 				unsigned long loop = std::stoi(argv[6]);
 				if (sourceBrsar.init(activeBrsarName))
 				{
-					if (lava::brawl::importWav(sourceBrsar, sourceSPDFile, sourceSPTFile, targetGroupID, targetFileID, targetWaveID, frequency, basewave, loop))
+					lava::brawl::rwsd tempRWSD;
+					if (tempRWSD.populate(*sourceBrsar.fileSection.getFileContentsPointer(targetFileID)))
 					{
-						exportBRSAR(sourceBrsar, activeBrsarName);
+						if (tempRWSD.overwriteWaveRawDataWithWAV(targetWaveID, wavPath))
+						{
+							if (sourceBrsar.overwriteFile(tempRWSD.fileSectionToVec(), tempRWSD.rawDataSectionToVec(), targetFileID))
+							{
+								exportBRSAR(sourceBrsar, activeBrsarName);
+							}
+							else
+							{
+								std::cout << "[ERROR] Failed to overwrite file in .brsar struct! Operation aborted!\n";
+							}
+						}
+						else
+						{
+							std::cout << "[ERROR] Failed to import .dsp! Operation aborted!\n";
+						}
+					}
+					else
+					{
+						std::cout << "[ERROR] Failed to parse RWSD! Operation aborted!\n";
 					}
 				}
 				else
 				{
-					std::cerr << "[ERROR] Failed to initialize .brsar struct! Operation aborted!\n";
+					std::cout << "[ERROR] Failed to initialize .brsar struct! Operation aborted!\n";
 				}
 				return 0;
 			}
@@ -159,10 +172,10 @@ int main(int argc, char** argv)
 		std::cout << "\tsawndcreate {GROUP_ID} {BRSAR_PATH, optional} {OUTPUT_PATH, opt}\n";
 		std::cout << "To import a .sawnd:\n";
 		std::cout << "\tsawnd {BRSAR_PATH, optional} {INPUT_PATH, optional}\n";
-		std::cout << "To import a .spd, .spt file pair (generated with sndconv.exe):\n";
-		std::cout << "\tinsert {GROUP_ID} {FILE_ID} {WAVE_ID} {FREQUENCY} {LOOP} {BRSAR_PATH, optional} {SPD_PATH, opt} {SPT_PATH, opt}\n";
+		std::cout << "To import a .wav:\n";
+		std::cout << "\tinsert {GROUP_ID} {FILE_ID} {WAVE_ID} {FREQUENCY} {LOOP} {BRSAR_PATH, optional} {WAV_PATH, opt}\n";
 		std::cout << "Note: Default BRSAR_PATH is \"" << brsarDefaultFilename << "\", default IN/OUTPUT_PATH is \"" << sawndDefaultFilename << "\".\n";
-		std::cout << "Note: Default SPD_PATH is \"" << spdDefaultFilename << "\", default SPT_PATH is \"" << sptDefaultFilename << "\".\n";
+		std::cout << "Note: Default WAV_PATH is \"" << wavDefaultFilename << "\".\n";
 		std::cout << "Note: To explicitly use one of the above defaults, specify \"" << nullArgumentString << "\" for that argument.\n";
 	}
 	catch (std::exception e)

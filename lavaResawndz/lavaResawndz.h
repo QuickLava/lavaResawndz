@@ -7,7 +7,7 @@ namespace lava
 {
 	namespace brawl
 	{
-		const std::string resawndzVersion = "v1.0.5";
+		const std::string resawndzVersion = "v1.1.0";
 		const unsigned long _MAX_SUPPORTED_SAWND_VERSION = 0x0002;
 
 		struct sawndFileEntry
@@ -41,7 +41,6 @@ namespace lava
 		std::vector<sawnd> parseSawndFie(std::string fileIn);
 		bool exportSawnd(brsar& sourceBrsar, std::size_t groupID, std::string targetFilePath);
 		bool importSawnd(brsar& sourceBrsar, std::string sourceFilePath);
-		bool importWav(brsar& sourceBrsar, std::string sourceSPDPath, std::string sourceSPTPath, unsigned long groupID, unsigned long fileID, unsigned long waveID, signed long frequency, signed long basewave, signed long loop);
 	}
 }
 
